@@ -1,0 +1,19 @@
+.env
+__pycache__/
+*.pyc
+venv/
+db.sqlite3
+.idea/
+.vscode/
+
+# Environment files
+.env
+.env.development
+.env.production
+.env.local
+.env.*.local
+
+# But keep example files
+!.env.example
+!.env.development.example
+!.env.production.example
