@@ -13,3 +13,23 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+    
+class Book(models.Model):
+    title = models.CharField(max_length=255)
+    text = models.TextField
+    description = models.TextField(blank=True)
+    published_date = models.DateField()
+
+    author = models.ForeignKey(
+        Author,
+        on_delete=models.CASCADE,
+        related_name="books"
+    )
+
+    categories = models.ManyToManyField(
+        Category,
+        related_name="books"
+    )
+
+    def __str__(self):
+        return self.title
