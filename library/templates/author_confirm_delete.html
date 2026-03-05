@@ -1,0 +1,23 @@
+{% extends 'library/base.html' %}
+{% block title %}Delete Author{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card border-danger">
+      <div class="card-header bg-danger text-white">Confirm Delete</div>
+      <div class="card-body">
+        <p>Are you sure you want to delete author <strong>{{ object.name }}</strong>?</p>
+        <p class="text-muted small">This will also delete all {{ object.books.count }} book(s) by this author.</p>
+        <form method="post">
+          {% csrf_token %}
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-danger">Yes, Delete</button>
+            <a href="{% url 'author-list' %}" class="btn btn-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

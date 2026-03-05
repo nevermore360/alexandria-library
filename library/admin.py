@@ -1,5 +1,11 @@
 from django.contrib import admin
-from .models import Author, Category, Book
+from .models import Category, Author, Book
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ['name']
+    list_filter = ['name']
+    search_fields = ['name']
 
 @admin.register(Author)
 class AuthorAdmin(admin.ModelAdmin):
@@ -7,12 +13,6 @@ class AuthorAdmin(admin.ModelAdmin):
     list_filter = ['birth_date']
     search_fields = ['name']
     ordering = ['name']
-
-@admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['name']
-    list_filter = ['name']
-    search_fields = ['name']
 
 @admin.register(Book)
 class BookAdmin(admin.ModelAdmin):
