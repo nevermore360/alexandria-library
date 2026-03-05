@@ -1,0 +1,66 @@
+{% extends 'library/base.html' %}
+{% block title %}{% if object %}Edit Book{% else %}New Book{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header bg-dark text-white">
+        {% if object %}Edit Book: {{ object.title }}{% else %}New Book{% endif %}
+      </div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Title</label>
+            {{ form.title }}
+            {% if form.title.errors %}
+              <div class="text-danger small">{{ form.title.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Description</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+              <div class="text-danger small">{{ form.description.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Published Date</label>
+            {{ form.published_date }}
+            {% if form.published_date.errors %}
+              <div class="text-danger small">{{ form.published_date.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Author</label>
+            {{ form.author }}
+            {% if form.author.errors %}
+              <div class="text-danger small">{{ form.author.errors }}</div>
+            {% endif %}
+            <div class="form-text">Select the author of this book.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Categories</label>
+            {{ form.categories }}
+            {% if form.categories.errors %}
+              <div class="text-danger small">{{ form.categories.errors }}</div>
+            {% endif %}
+            <div class="form-text">Hold <kbd>Ctrl</kbd> (or <kbd>Cmd</kbd> on Mac) to select multiple categories.</div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-success">Save</button>
+            <a href="{% url 'book-list' %}" class="btn btn-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

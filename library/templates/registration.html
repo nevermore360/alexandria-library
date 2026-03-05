@@ -1,0 +1,45 @@
+{% extends 'library/base.html' %}
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header bg-dark text-white text-center">
+        📝 Create Account
+      </div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          {% for field in form %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold">{{ field.label }}</label>
+              <input type="{{ field.field.widget.input_type }}"
+                     name="{{ field.html_name }}"
+                     class="form-control {% if field.errors %}is-invalid{% endif %}"
+                     {% if field.value %}value="{{ field.value }}"{% endif %}>
+              {% if field.errors %}
+                <div class="invalid-feedback">{{ field.errors|join:", " }}</div>
+              {% endif %}
+              {% if field.help_text %}
+                <div class="form-text text-muted">{{ field.help_text }}</div>
+              {% endif %}
+            </div>
+          {% endfor %}
+
+          <button type="submit" class="btn btn-dark w-100">Register</button>
+        </form>
+        <hr>
+        <p class="text-center mb-0 small">
+          Already have an account? <a href="{% url 'login' %}">Sign in</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
