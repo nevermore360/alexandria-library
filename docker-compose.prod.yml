@@ -1,9 +1,6 @@
 services:
   web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
+    image: ${DOCKERHUB_USERNAME}/library-app:${IMAGE_TAG:-latest}
     restart: always
     command: >
       sh -c "python manage.py migrate --noinput &&
@@ -46,9 +43,7 @@ services:
       - redis_data:/data
 
   nginx:
-    build:
-      context: ./nginx
-      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME}/library-nginx:${IMAGE_TAG:-latest}
     ports:
       - "8000:80"
     restart: always
