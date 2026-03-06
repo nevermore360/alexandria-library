@@ -132,7 +132,7 @@ jobs:
           script: |
             set -e
 
-            APP_DIR=~/library-app
+            APP_DIR=/root/sites/alexandria-library
             IMAGE_TAG=${{ github.sha }}
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
 
