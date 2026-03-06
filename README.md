@@ -3,6 +3,8 @@
 A full-featured web application for managing a digital library — books, authors, and categories — built with Django and deployed via Docker with a fully automated CI/CD pipeline.
 
 ---
+## Video Demonstration LINK:
+- https://drive.google.com/file/d/1Iz1B-8jH1GMpp3Xup5op4b_t-ftOkRmS/view?usp=drive_link
 
 ## Features
 
