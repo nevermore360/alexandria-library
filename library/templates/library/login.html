@@ -41,22 +41,6 @@
         </p>
       </div>
     </div>
-
-    <div class="card mt-3">
-      <div class="card-header bg-secondary text-white">🔑 Get API Token</div>
-      <div class="card-body">
-        <p class="small text-muted mb-2">To authenticate API requests, obtain a token:</p>
-        <pre class="bg-light p-2 rounded small mb-1">POST /api/token/
-Content-Type: application/json
-
-{
-  "username": "your_username",
-  "password": "your_password"
-}</pre>
-        <p class="small text-muted mb-1">Then use it in requests:</p>
-        <pre class="bg-light p-2 rounded small">Authorization: Token &lt;your_token&gt;</pre>
-      </div>
-    </div>
   </div>
 </div>
 {% endblock %}
