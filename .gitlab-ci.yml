@@ -1,0 +1,134 @@
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  IMAGE_NAME: $DOCKERHUB_USERNAME/library-app
+  NGINX_IMAGE_NAME: $DOCKERHUB_USERNAME/library-nginx
+
+# ── Stage 1: Code Quality & Tests ─────────────────────────────────────────────
+test:
+  stage: test
+  image: python:3.11-slim
+  services:
+    - name: postgres:15-alpine
+      alias: postgres
+  variables:
+    SECRET_KEY: ci-only-dummy-secret-key-not-used-in-production
+    DEBUG: "True"
+    ALLOWED_HOSTS: localhost,127.0.0.1
+    DB_ENGINE: django.db.backends.postgresql
+    DB_NAME: ci_testdb
+    DB_USER: ci_user
+    DB_PASSWORD: ci_password
+    DB_HOST: postgres
+    DB_PORT: "5432"
+    DJANGO_SETTINGS_MODULE: library_app.settings.development
+    POSTGRES_USER: ci_user
+    POSTGRES_PASSWORD: ci_password
+    POSTGRES_DB: ci_testdb
+  before_script:
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+    - pip install flake8 pytest pytest-django
+  script:
+    - echo "==> Running flake8 code quality check"
+    - flake8 . --max-line-length=120 --exclude=migrations,__pycache__,.git,staticfiles,media,.env --ignore=E501,W503
+    - echo "==> Running pytest"
+    - pytest library/tests.py -v --tb=short
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+build:
+  stage: build
+  image: docker:26-cli
+  services:
+    - name: docker:26-dind
+      alias: docker
+  before_script:
+    - docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_TOKEN
+  script:
+    - echo "==> Building web image"
+    - docker build
+        --target production
+        --build-arg SECRET_KEY=build-time-dummy-key-not-used-at-runtime
+        -t $IMAGE_NAME:latest
+        -t $IMAGE_NAME:$CI_COMMIT_SHA
+        .
+    - echo "==> Building nginx image"
+    - docker build
+        -t $NGINX_IMAGE_NAME:latest
+        -t $NGINX_IMAGE_NAME:$CI_COMMIT_SHA
+        ./nginx
+    - echo "==> Pushing images to Docker Hub"
+    - docker push $IMAGE_NAME:latest
+    - docker push $IMAGE_NAME:$CI_COMMIT_SHA
+    - docker push $NGINX_IMAGE_NAME:latest
+    - docker push $NGINX_IMAGE_NAME:$CI_COMMIT_SHA
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+
+deploy:
+  stage: deploy
+  image: alpine:3.19
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+  script:
+    - echo "==> Deploying to $SSH_HOST"
+    - ssh $SSH_USERNAME@$SSH_HOST "
+        set -e
+
+        echo '==> Navigating to app directory' &&
+        cd ~/library-app &&
+
+        echo '==> Pulling latest compose config from git' &&
+        git pull origin master &&
+
+        echo '==> Pulling new images from Docker Hub' &&
+        IMAGE_TAG=$CI_COMMIT_SHA DOCKERHUB_USERNAME=$DOCKERHUB_USERNAME
+          docker compose -f docker-compose.prod.yml pull web nginx &&
+
+        echo '==> Zero-downtime rolling update: scaling web to 2 replicas' &&
+        IMAGE_TAG=$CI_COMMIT_SHA DOCKERHUB_USERNAME=$DOCKERHUB_USERNAME
+          docker compose -f docker-compose.prod.yml up -d --no-deps --scale web=2 --no-recreate web &&
+
+        echo '==> Waiting 20s for new container to become healthy' &&
+        sleep 20 &&
+
+        echo '==> Running database migrations' &&
+        IMAGE_TAG=$CI_COMMIT_SHA DOCKERHUB_USERNAME=$DOCKERHUB_USERNAME
+          docker compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput &&
+
+        echo '==> Collecting static files' &&
+        IMAGE_TAG=$CI_COMMIT_SHA DOCKERHUB_USERNAME=$DOCKERHUB_USERNAME
+          docker compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput &&
+
+        echo '==> Scaling web back to 1 replica' &&
+        IMAGE_TAG=$CI_COMMIT_SHA DOCKERHUB_USERNAME=$DOCKERHUB_USERNAME
+          docker compose -f docker-compose.prod.yml up -d --no-deps --scale web=1 web &&
+
+        echo '==> Restarting nginx' &&
+        IMAGE_TAG=$CI_COMMIT_SHA DOCKERHUB_USERNAME=$DOCKERHUB_USERNAME
+          docker compose -f docker-compose.prod.yml up -d --no-deps nginx &&
+
+        echo '==> Ensuring all services are up' &&
+        IMAGE_TAG=$CI_COMMIT_SHA DOCKERHUB_USERNAME=$DOCKERHUB_USERNAME
+          docker compose -f docker-compose.prod.yml up -d &&
+
+        echo '==> Pruning unused Docker images' &&
+        docker image prune -f &&
+
+        echo '==> Deployment complete'
+      "
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+  needs:
+    - build
