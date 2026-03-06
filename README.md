@@ -262,11 +262,6 @@ curl http://your-domain/api/books/ \
 ### Login Page
 ![Login](docs/screenshots/login.png)
 
-### CI/CD Pipeline
-![Pipeline](docs/screenshots/pipeline.png)
-
-> Add screenshots by creating a `docs/screenshots/` directory and placing images there.
-
 ---
 
 ## License
