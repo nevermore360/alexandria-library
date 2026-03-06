@@ -3,25 +3,41 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main
       - master
   pull_request:
     branches:
-      - main
       - master
 
 jobs:
-  # ─── Job 1: Code Quality & Tests ────────────────────────────────────────────
   test:
     name: Code Quality & Tests
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: ci_user
+          POSTGRES_PASSWORD: ci_password
+          POSTGRES_DB: ci_testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     env:
       SECRET_KEY: ci-only-dummy-secret-key-not-used-in-production
       DEBUG: "True"
       ALLOWED_HOSTS: localhost,127.0.0.1
-      DB_ENGINE: django.db.backends.sqlite3
-      DB_NAME: /tmp/test_db.sqlite3
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: ci_testdb
+      DB_USER: ci_user
+      DB_PASSWORD: ci_password
+      DB_HOST: localhost
+      DB_PORT: "5432"
       DJANGO_SETTINGS_MODULE: library_app.settings.development
 
     steps:
@@ -50,7 +66,6 @@ jobs:
       - name: Run pytest
         run: pytest library/tests.py -v --tb=short
 
-  # ─── Job 2: Build & Push Docker Image ───────────────────────────────────────
   build-and-push:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
@@ -100,7 +115,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ─── Job 3: Deploy to Server ─────────────────────────────────────────────────
   deploy:
     name: Deploy to Server
     runs-on: ubuntu-latest
